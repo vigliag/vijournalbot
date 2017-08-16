@@ -212,7 +212,7 @@ def reminder_sender(bot, job):
 def setup():
     """Sets up the bot"""
     
-    db.bind(provider='sqlite', filename='database.sqlite', create_db=True)
+    db.bind(provider='sqlite', filename='./data/database.sqlite', create_db=True)
     db.generate_mapping(create_tables=True)
     orm.sql_debug(True)
 
