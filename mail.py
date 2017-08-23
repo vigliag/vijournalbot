@@ -47,9 +47,9 @@ def send_mail(address, subject, text):
 def send_out_weekly_recap():
     for user in orm.select(u for u in User):
         mail = prepare_mail(user)
-        print "sending mail to " + user.email
+        print("sending mail to " + user.email)
         if user.email:
-            print send_mail(user.email, "Your weekly journal entries", mail)
+            send_mail(user.email, "Your weekly journal entries", mail)
 
 @orm.db_session
 def main():
