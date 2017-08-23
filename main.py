@@ -200,6 +200,7 @@ def reminder_sender(bot, job):
 
     NOTIFIER_LAST_RUN = datetime.now()
 
+@orm.db_session
 def weekly_recap():
     if datetime.now().isoweekday == 7:
         send_out_weekly_recap()
