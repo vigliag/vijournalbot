@@ -1,0 +1,12 @@
+Hello! These are your journal entries 
+
+from {{start.strftime('%c')}}
+to {{end.strftime('%c')}}
+
+{% for day, updates in updates_by_day %}
+
+{{ day.strftime("%a %x") }}
+    {% for update in updates %}
+{{ update.timestamp.time().strftime('%H:%M') }}: {{update.answers.text + ' >> ' if update.answers}}{{update.text}}
+    {% endfor %}
+{% endfor %}

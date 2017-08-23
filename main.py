@@ -1,40 +1,18 @@
+#!/usr/bin/env python
+
+import os
 import logging
 from datetime import datetime, time, timedelta
 from functools import wraps
 from collections import defaultdict
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Job
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from pony import orm
-import os
+from database import db, Question, User, Update
+from mail import send_out_weekly_recap
 
 BOT_TOKEN = os.environ['VIJOURNALBOT_TOKEN']
 PASSWORD = os.environ['VIJOURNALBOT_PASSWORD']
 NOTIFIER_LAST_RUN = datetime.now()
-
-db = orm.Database()
-
-class Question(db.Entity):
-    """Represents a question the user wants to be asked daily"""
-    enabled = orm.Required(bool)
-    options = orm.Optional(str)
-    text = orm.Required(str)
-    answers = orm.Set('Update')
-    user = orm.Required('User')
-
-class Update(db.Entity):
-    """Represents a single update in the database"""
-    timestamp = orm.Required(datetime)
-    text = orm.Required(str)
-    user = orm.Required('User')
-    answers = orm.Optional(Question)
-    message_id = orm.Optional(int)
-
-class User(db.Entity):
-    """Represents a single user, to notify periodically"""
-    chat_id = orm.PrimaryKey(int)
-    email = orm.Optional(str)
-    reminder_time = orm.Optional(time)
-    questions = orm.Set(Question)
-    updates = orm.Set(Update)
 
 class Session(object):
     """In memory state of a chat session"""
@@ -168,6 +146,19 @@ def handle_add_question(session, bot, update):
 
 @chat_session
 @orm.db_session
+def handle_email(session, bot, update):
+    """Adds a question"""
+    chat_id = update.message.chat_id
+    email = update.message.text.replace("/email ", "").strip()
+    user = User.get(chat_id=chat_id)
+    if email:
+        user.email = email
+        bot.send_message(chat_id=update.message.chat_id, text="Email updated")
+    else:
+        bot.send_message(chat_id=update.message.chat_id, text="Current mail: " + user.email)
+
+@chat_session
+@orm.db_session
 def handle_del_question(session, bot, update, **kwargs):
     """Disables a question given its id"""
     chat_id = update.message.chat_id
@@ -209,6 +200,10 @@ def reminder_sender(bot, job):
 
     NOTIFIER_LAST_RUN = datetime.now()
 
+def weekly_recap():
+    if datetime.now().isoweekday == 7:
+        send_out_weekly_recap()
+
 def setup():
     """Sets up the bot"""
     
@@ -229,8 +224,10 @@ def setup():
     dispatcher.add_handler(CommandHandler('del', handle_del_question, pass_args=True))
     dispatcher.add_handler(CommandHandler('stop', handle_stop))
     dispatcher.add_handler(CommandHandler('ask', handle_ask))
+    dispatcher.add_handler(CommandHandler('email', handle_email))
     dispatcher.add_handler(MessageHandler(Filters.text, handle_message))
 
+    updater.job_queue.run_repeating(weekly_recap, timedelta(days=1), first=time(23,50))
     updater.job_queue.run_repeating(reminder_sender, 60.0 * 10)
 
     updater.start_polling()
