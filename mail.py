@@ -11,6 +11,7 @@ import os
 SMTP_LOGIN = os.environ['VIJOURNALBOT_SMTP_LOGIN']
 SMTP_PASSWORD = os.environ['VIJOURNALBOT_SMTP_PASSWORD']
 SMTP_SERVER = os.environ['VIJOURNALBOT_SMTP_SERVER']
+SMTP_PORT = int(os.environ['VIJOURNALBOT_SMTP_PORT']) or 587
 
 with open('mailtemplate.jinja2') as f:
     mailtemplate_file = f.read()
@@ -39,7 +40,7 @@ def send_mail(address, subject, text):
     msg['Subject'] = subject
     msg['From']    = SMTP_LOGIN
     msg['To']      = address
-    s = smtplib.SMTP(SMTP_SERVER, 587)
+    s = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
     s.login(SMTP_LOGIN, SMTP_PASSWORD)
     s.sendmail(msg['From'], msg['To'], msg.as_string())
     s.quit()
