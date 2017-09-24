@@ -202,7 +202,7 @@ def reminder_sender(bot, job):
 
 @orm.db_session
 def weekly_recap():
-    if datetime.now().isoweekday == 7:
+    if datetime.now().isoweekday() == 7:
         send_out_weekly_recap()
 
 def setup():
@@ -228,7 +228,7 @@ def setup():
     dispatcher.add_handler(CommandHandler('email', handle_email))
     dispatcher.add_handler(MessageHandler(Filters.text, handle_message))
 
-    updater.job_queue.run_repeating(weekly_recap, timedelta(days=1), first=time(23,50))
+    updater.job_queue.run_repeating(weekly_recap, timedelta(days=1), first=time(22, 50))
     updater.job_queue.run_repeating(reminder_sender, 60.0 * 10)
 
     updater.start_polling()
